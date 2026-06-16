@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>從公文啟動專案（GAS）</title>
+  <link rel="stylesheet" href="reveal/reset.css">
+  <link rel="stylesheet" href="reveal/reveal.css">
+  <style>
+    :root {
+      --c-bg: #0b0f18;
+      --c-panel: rgba(255, 252, 244, 0.9);
+      --c-text: #241c15;
+      --c-gold: #bc9453;
+      --c-gold-dark: #8c692f;
+      --c-line: rgba(188, 148, 83, 0.45);
+      --theme-accent: #dead5e;
+      --theme-accent-dark: #936925;
+      --theme-accent-rgb: 222, 173, 94;
+      --theme-surface: #f2f0ed;
+      --theme-glow: rgba(222, 173, 94, 0.24);
+      --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+    body {
+      background:
+        radial-gradient(circle at 20% 18%, rgba(188,148,83,0.20), transparent 28%),
+        radial-gradient(circle at 84% 68%, rgba(67,135,180,0.20), transparent 30%),
+        linear-gradient(135deg, #070a11 0%, #131925 52%, #0b0f18 100%);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+    .reveal {
+      color: #fff;
+    }
+    .reveal .slides section {
+      width: 1920px;
+      height: 1080px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .slide-image-frame {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #05070b;
+    }
+    .slide-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #05070b;
+    }
+    .page-badge {
+      position: absolute;
+      top: 34px;
+      right: 42px;
+      min-width: 54px;
+      height: 54px;
+      padding: 0 16px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      color: var(--theme-accent-dark);
+      background:
+        radial-gradient(circle at 28% 20%, rgba(255,255,255,0.92), transparent 46%),
+        linear-gradient(135deg, rgba(var(--theme-accent-rgb), 0.16), rgba(255, 252, 244, 0.88));
+      border: 2px solid rgba(var(--theme-accent-rgb), 0.78);
+      box-shadow: 0 16px 42px rgba(0,0,0,0.18), 0 0 26px var(--theme-glow);
+      font-size: 25px;
+      font-weight: 900;
+      z-index: 20;
+    }
+    .route7-control-bar {
+      position: fixed;
+      left: 50%;
+      bottom: 34px;
+      transform: translateX(-50%);
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px 12px 20px;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(var(--theme-accent-rgb), 0.26), transparent 36%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(255, 252, 244, 0.82)),
+        linear-gradient(135deg, var(--theme-surface), rgba(var(--theme-accent-rgb), 0.14));
+      border: 1px solid rgba(var(--theme-accent-rgb), 0.46);
+      box-shadow:
+        0 20px 54px rgba(10, 12, 18, 0.26),
+        0 0 34px var(--theme-glow),
+        inset 0 1px 0 rgba(255,255,255,0.86);
+      color: var(--c-text);
+      backdrop-filter: blur(16px);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    .route7-control-bar.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(18px);
+    }
+    .route7-control-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--theme-accent-dark);
+      font: 900 17px "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .route7-control-label::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--theme-accent);
+      box-shadow: 0 0 0 5px rgba(var(--theme-accent-rgb), 0.16), 0 0 18px var(--theme-glow);
+    }
+    .route7-control-bar select {
+      min-width: 230px;
+      border: 1px solid rgba(var(--theme-accent-rgb), 0.50);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,252,244,0.86)),
+        var(--theme-surface);
+      color: var(--c-text);
+      font: 900 18px "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      padding: 10px 38px 10px 16px;
+      outline: none;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.74), 0 0 0 4px rgba(var(--theme-accent-rgb), 0.08);
+    }
+    .reveal.route7-transition-flash-zoom .slides section.present,
+    .reveal.route7-transition-tilt-rise .slides section.present,
+    .reveal.route7-transition-depth-sweep .slides section.present,
+    .reveal.route7-transition-glass-wipe .slides section.present,
+    .reveal.route7-transition-cinema-pop .slides section.present {
+      animation-duration: 0.78s;
+      animation-fill-mode: both;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.route7-transition-flash-zoom .slides section.present { animation-name: route7FlashZoomIn; }
+    .reveal.route7-transition-tilt-rise .slides section.present { animation-name: route7TiltRiseIn; }
+    .reveal.route7-transition-depth-sweep .slides section.present { animation-name: route7DepthSweepIn; }
+    .reveal.route7-transition-glass-wipe .slides section.present { animation-name: route7GlassWipeIn; }
+    .reveal.route7-transition-cinema-pop .slides section.present { animation-name: route7CinemaPopIn; }
+    @keyframes route7FlashZoomIn {
+      from { opacity: 0; filter: brightness(1.35) blur(10px); transform: scale(0.88); }
+      to { opacity: 1; filter: brightness(1) blur(0); transform: scale(1); }
+    }
+    @keyframes route7TiltRiseIn {
+      from { opacity: 0; transform: translateY(42px) rotateX(8deg) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+    }
+    @keyframes route7DepthSweepIn {
+      from { opacity: 0; filter: blur(16px); transform: translateX(44px) scale(1.03); }
+      to { opacity: 1; filter: blur(0); transform: translateX(0) scale(1); }
+    }
+    @keyframes route7GlassWipeIn {
+      from { opacity: 0; clip-path: inset(0 100% 0 0 round 28px); filter: blur(4px); }
+      to { opacity: 1; clip-path: inset(0 0 0 0 round 0); filter: blur(0); }
+    }
+    @keyframes route7CinemaPopIn {
+      from { opacity: 0; filter: contrast(1.12) saturate(1.15); transform: scale(1.08) translateY(-18px); }
+      to { opacity: 1; filter: contrast(1) saturate(1); transform: scale(1) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+<section id="slide-1" data-page="1">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_01.png" alt="從公文啟動專案（GAS） - slide 1">
+  </div>
+  <div class="page-badge">1</div>
+</section>
+<section id="slide-2" data-page="2">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_02.png" alt="從公文啟動專案（GAS） - slide 2">
+  </div>
+  <div class="page-badge">2</div>
+</section>
+<section id="slide-3" data-page="3">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_03.png" alt="從公文啟動專案（GAS） - slide 3">
+  </div>
+  <div class="page-badge">3</div>
+</section>
+<section id="slide-4" data-page="4">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_04.png" alt="從公文啟動專案（GAS） - slide 4">
+  </div>
+  <div class="page-badge">4</div>
+</section>
+<section id="slide-5" data-page="5">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_05.png" alt="從公文啟動專案（GAS） - slide 5">
+  </div>
+  <div class="page-badge">5</div>
+</section>
+<section id="slide-6" data-page="6">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_06.png" alt="從公文啟動專案（GAS） - slide 6">
+  </div>
+  <div class="page-badge">6</div>
+</section>
+<section id="slide-7" data-page="7">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_07.png" alt="從公文啟動專案（GAS） - slide 7">
+  </div>
+  <div class="page-badge">7</div>
+</section>
+<section id="slide-8" data-page="8">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_08.png" alt="從公文啟動專案（GAS） - slide 8">
+  </div>
+  <div class="page-badge">8</div>
+</section>
+<section id="slide-9" data-page="9">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_09.png" alt="從公文啟動專案（GAS） - slide 9">
+  </div>
+  <div class="page-badge">9</div>
+</section>
+<section id="slide-10" data-page="10">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_10.png" alt="從公文啟動專案（GAS） - slide 10">
+  </div>
+  <div class="page-badge">10</div>
+</section>
+<section id="slide-11" data-page="11">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_11.png" alt="從公文啟動專案（GAS） - slide 11">
+  </div>
+  <div class="page-badge">11</div>
+</section>
+<section id="slide-12" data-page="12">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_12.png" alt="從公文啟動專案（GAS） - slide 12">
+  </div>
+  <div class="page-badge">12</div>
+</section>
+<section id="slide-13" data-page="13">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_13.png" alt="從公文啟動專案（GAS） - slide 13">
+  </div>
+  <div class="page-badge">13</div>
+</section>
+<section id="slide-14" data-page="14">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_14.png" alt="從公文啟動專案（GAS） - slide 14">
+  </div>
+  <div class="page-badge">14</div>
+</section>
+<section id="slide-15" data-page="15">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_15.png" alt="從公文啟動專案（GAS） - slide 15">
+  </div>
+  <div class="page-badge">15</div>
+</section>
+<section id="slide-16" data-page="16">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_16.png" alt="從公文啟動專案（GAS） - slide 16">
+  </div>
+  <div class="page-badge">16</div>
+</section>
+<section id="slide-17" data-page="17">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_17.png" alt="從公文啟動專案（GAS） - slide 17">
+  </div>
+  <div class="page-badge">17</div>
+</section>
+<section id="slide-18" data-page="18">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_18.png" alt="從公文啟動專案（GAS） - slide 18">
+  </div>
+  <div class="page-badge">18</div>
+</section>
+<section id="slide-19" data-page="19">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_19.png" alt="從公文啟動專案（GAS） - slide 19">
+  </div>
+  <div class="page-badge">19</div>
+</section>
+<section id="slide-20" data-page="20">
+  <div class="slide-image-frame">
+    <img class="slide-image" src="images/slide_20.png" alt="從公文啟動專案（GAS） - slide 20">
+  </div>
+  <div class="page-badge">20</div>
+</section>
+    </div>
+  </div>
+  <div class="route7-control-bar">
+    <span class="route7-control-label">切換效果</span>
+    <select id="transition-select" aria-label="簡報切換效果"></select>
+  </div>
+  <script src="reveal/reveal.js"></script>
+  <script>
+    const transitionModes = [
+  {
+    "value": "zoom",
+    "label": "縮放翻飛 (Zoom)",
+    "reveal": "zoom",
+    "className": "route7-transition-zoom"
+  },
+  {
+    "value": "slide",
+    "label": "橫向滑動 (Slide)",
+    "reveal": "slide",
+    "className": "route7-transition-slide"
+  },
+  {
+    "value": "fade",
+    "label": "柔光淡入 (Fade)",
+    "reveal": "fade",
+    "className": "route7-transition-fade"
+  },
+  {
+    "value": "convex",
+    "label": "3D 凸面翻頁 (Convex)",
+    "reveal": "convex",
+    "className": "route7-transition-convex"
+  },
+  {
+    "value": "concave",
+    "label": "3D 凹面翻頁 (Concave)",
+    "reveal": "concave",
+    "className": "route7-transition-concave"
+  },
+  {
+    "value": "flash-zoom",
+    "label": "閃光推近 (Flash Zoom)",
+    "reveal": "zoom",
+    "className": "route7-transition-flash-zoom"
+  },
+  {
+    "value": "tilt-rise",
+    "label": "傾斜浮升 (Tilt Rise)",
+    "reveal": "slide",
+    "className": "route7-transition-tilt-rise"
+  },
+  {
+    "value": "depth-sweep",
+    "label": "景深掃入 (Depth Sweep)",
+    "reveal": "fade",
+    "className": "route7-transition-depth-sweep"
+  },
+  {
+    "value": "glass-wipe",
+    "label": "玻璃擦拭 (Glass Wipe)",
+    "reveal": "fade",
+    "className": "route7-transition-glass-wipe"
+  },
+  {
+    "value": "cinema-pop",
+    "label": "電影彈出 (Cinema Pop)",
+    "reveal": "zoom",
+    "className": "route7-transition-cinema-pop"
+  }
+];
+    const defaultTransition = "zoom";
+    const totalPages = 20;
+
+    Reveal.initialize({
+      width: 1920,
+      height: 1080,
+      margin: 0,
+      minScale: 0.2,
+      maxScale: 2.0,
+      hash: true,
+      slideNumber: false,
+      transition: transitionModes.find(mode => mode.value === defaultTransition)?.reveal || "zoom",
+      transitionSpeed: "default",
+      backgroundTransition: "fade",
+      center: false,
+      controls: true,
+      progress: true,
+      keyboard: true,
+      overview: true,
+      touch: true,
+      plugins: []
+    });
+
+    const revealRoot = document.querySelector(".reveal");
+    const transitionSelect = document.getElementById("transition-select");
+    const controlBar = document.querySelector(".route7-control-bar");
+    const transitionClasses = transitionModes.map(mode => mode.className);
+    let digitBuffer = "";
+    let digitTimer = null;
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0;
+      let s = 0;
+      const l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          default: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [h, s, l];
+    }
+
+    function hslToRgb(h, s, l) {
+      function hue2rgb(p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      }
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+      }
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+
+    function toRgbString(color) {
+      return color.r + ", " + color.g + ", " + color.b;
+    }
+
+    function toHex(color) {
+      return "#" + [color.r, color.g, color.b].map(value => value.toString(16).padStart(2, "0")).join("");
+    }
+
+    function applyThemeColor(color) {
+      const [h, s, l] = rgbToHsl(color.r, color.g, color.b);
+      const accent = hslToRgb(h, clamp(s + 0.14, 0.38, 0.78), clamp(l, 0.42, 0.62));
+      const dark = hslToRgb(h, clamp(s + 0.08, 0.34, 0.72), clamp(l * 0.48, 0.20, 0.36));
+      const surface = hslToRgb(h, clamp(s * 0.32, 0.10, 0.30), 0.94);
+      const rootStyle = document.documentElement.style;
+      rootStyle.setProperty("--theme-accent", toHex(accent));
+      rootStyle.setProperty("--theme-accent-dark", toHex(dark));
+      rootStyle.setProperty("--theme-accent-rgb", toRgbString(accent));
+      rootStyle.setProperty("--theme-surface", toHex(surface));
+      rootStyle.setProperty("--theme-glow", "rgba(" + toRgbString(accent) + ", 0.24)");
+    }
+
+    function extractCoverTheme() {
+      const coverImage = document.querySelector("#slide-1 .slide-image");
+      if (!coverImage) return;
+      const sample = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const width = 160;
+          const height = 90;
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(coverImage, 0, 0, width, height);
+          const pixels = ctx.getImageData(0, 0, width, height).data;
+          const hueBuckets = new Map();
+          for (let i = 0; i < pixels.length; i += 12) {
+            const r = pixels[i];
+            const g = pixels[i + 1];
+            const b = pixels[i + 2];
+            const a = pixels[i + 3];
+            if (a < 180) continue;
+            const [h, s, l] = rgbToHsl(r, g, b);
+            if (l < 0.07 || l > 0.90 || s < 0.10) continue;
+            const hue = Math.round(h * 360);
+            const key = Math.round(hue / 18) * 18;
+            const coolBias = hue >= 185 && hue <= 285 ? 1.28 : 1;
+            const areaWeight = l < 0.24 ? 1.18 : 1;
+            const clarityWeight = 0.52 + Math.pow(s, 1.35);
+            const luminanceWeight = 1 - Math.min(0.72, Math.abs(l - 0.38));
+            const score = clarityWeight * luminanceWeight * areaWeight * coolBias;
+            const current = hueBuckets.get(key) || { score: 0, weight: 0, r: 0, g: 0, b: 0 };
+            current.score += score;
+            current.weight += score;
+            current.r += r * score;
+            current.g += g * score;
+            current.b += b * score;
+            hueBuckets.set(key, current);
+          }
+          const dominant = [...hueBuckets.values()].sort((a, b) => b.score - a.score)[0];
+          if (dominant && dominant.weight > 0) {
+            applyThemeColor({
+              r: Math.round(dominant.r / dominant.weight),
+              g: Math.round(dominant.g / dominant.weight),
+              b: Math.round(dominant.b / dominant.weight)
+            });
+          }
+        } catch (error) {
+          console.warn("Route 7 cover theme sampling skipped:", error);
+        }
+      };
+      if (coverImage.complete && coverImage.naturalWidth) {
+        sample();
+      } else {
+        coverImage.addEventListener("load", sample, { once: true });
+      }
+    }
+
+    function applyTransitionMode(value) {
+      const selected = transitionModes.find(mode => mode.value === value) || transitionModes[0];
+      transitionClasses.forEach(cls => revealRoot.classList.remove(cls));
+      revealRoot.classList.add(selected.className);
+      Reveal.configure({ transition: selected.reveal });
+    }
+
+    function goToPage(page) {
+      const target = Math.max(1, Math.min(totalPages, Number(page) || 1));
+      Reveal.slide(target - 1);
+    }
+
+    function updateState() {
+      const index = (Reveal.getIndices().h || 0) + 1;
+      controlBar.classList.toggle("hidden", index !== 1);
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    transitionModes.forEach(mode => {
+      const option = document.createElement("option");
+      option.value = mode.value;
+      option.textContent = mode.label;
+      option.selected = mode.value === defaultTransition;
+      transitionSelect.appendChild(option);
+    });
+    transitionSelect.addEventListener("change", event => applyTransitionMode(event.target.value));
+    transitionSelect.addEventListener("keydown", event => event.stopPropagation());
+    applyTransitionMode(defaultTransition);
+    extractCoverTheme();
+
+    document.addEventListener("keydown", event => {
+      const tag = event.target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "select" || tag === "textarea") return;
+      if (/^[0-9]$/.test(event.key)) {
+        digitBuffer += event.key;
+        clearTimeout(digitTimer);
+        digitTimer = setTimeout(() => digitBuffer = "", 1200);
+      }
+      if (event.key === "Enter" && digitBuffer) {
+        goToPage(digitBuffer);
+        digitBuffer = "";
+      }
+      if (event.key.toLowerCase() === "f") toggleFullscreen();
+      if (event.key === "Home") goToPage(1);
+      if (event.key === "End") goToPage(totalPages);
+    });
+
+    Reveal.on("slidechanged", updateState);
+    Reveal.on("ready", updateState);
+    updateState();
+  </script>
+</body>
+</html>
